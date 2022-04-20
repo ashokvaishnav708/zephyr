@@ -1,0 +1,15 @@
+{
+  "name": "framework-zephyr-loramac-node",
+  "version": "0.0.0-alpha+sha.12019623bb",
+  "description": "Zephyr module for LoRaWAN endpoint stack implementation",
+  "keywords": [
+    "zephyr",
+    "library",
+    "lorawan",
+    "lora"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/loramac-node"
+  }
+}

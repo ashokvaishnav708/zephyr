@@ -1,0 +1,1 @@
+{"type": "tool", "name": "framework-zephyr-mbedtls", "version": "0.0.0-alpha+sha.5765cb7f75", "spec": {"owner": "platformio", "id": 8133, "name": "framework-zephyr-mbedtls", "requirements": null, "url": null}}

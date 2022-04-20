@@ -1,0 +1,14 @@
+{
+  "name": "framework-zephyr-tinycbor",
+  "version": "0.0.0-alpha+sha.40daca97b4",
+  "description": "Zephyr module for Concise Binary Object Representation Library",
+  "keywords": [
+    "library",
+    "zephyr"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/tinycbor"
+  }
+}

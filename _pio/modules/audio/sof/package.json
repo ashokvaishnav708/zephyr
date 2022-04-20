@@ -1,0 +1,15 @@
+{
+  "name": "framework-zephyr-sof",
+  "version": "0.0.0-alpha+sha.76feb11d1b",
+  "description": "Zephyr module for Sound Open Firmware",
+  "keywords": [
+    "zephyr",
+    "library",
+    "audio",
+    "dsp"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/sof"
+  }
+}

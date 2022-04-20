@@ -1,0 +1,15 @@
+{
+  "name": "framework-zephyr-tinycrypt",
+  "version": "0.0.0-alpha+sha.3e9a49d267",
+  "description": "The TinyCrypt Library provides an implementation for constrained devices of a minimal set of standard cryptography primitives for Zephyr framework",
+  "keywords": [
+    "library",
+    "zephyr",
+    "secure",
+    "cryptography"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/tinycrypt"
+  }
+}

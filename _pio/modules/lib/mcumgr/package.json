@@ -1,0 +1,13 @@
+{
+  "name": "framework-zephyr-mcumgr",
+  "version": "0.0.0-alpha+sha.9ffebd5e92",
+  "description": "Zephyr module for mcumgr management library for 32-bit MCUs",
+  "keywords": [
+    "zephyr",
+    "library"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/mcumgr"
+  }
+}

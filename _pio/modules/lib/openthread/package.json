@@ -1,0 +1,14 @@
+{
+  "name": "framework-zephyr-openthread",
+  "version": "0.0.0-alpha+sha.5d706547eb",
+  "description": "Zephyr module for OpenThread - an open-source implementation of the Thread networking protocol",
+  "keywords": [
+    "zephyr",
+    "library",
+    "networking"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/openthread"
+  }
+}

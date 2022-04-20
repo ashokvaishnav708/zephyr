@@ -1,0 +1,15 @@
+{
+  "name": "framework-zephyr-mbedtls",
+  "version": "0.0.0-alpha+sha.5765cb7f75",
+  "description": "Zephyr module for the mbed TLS library",
+  "keywords": [
+    "zephyr",
+    "library",
+    "cryptography",
+    "ssl"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/mbedtls"
+  }
+}

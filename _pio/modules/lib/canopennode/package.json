@@ -1,0 +1,14 @@
+{
+  "name": "framework-zephyr-canopennode",
+  "version": "0.0.0-alpha+sha.f167efe85c",
+  "description": "Zephyr module for CANopenNode - a free and open source CANopen Stack",
+  "keywords": [
+    "zephyr",
+    "library",
+    "can"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/canopennode"
+  }
+}

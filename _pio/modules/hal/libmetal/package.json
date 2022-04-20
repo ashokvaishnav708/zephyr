@@ -1,0 +1,13 @@
+{
+  "name": "framework-zephyr-libmetal",
+  "version": "0.0.0-alpha+sha.39d049d4ae",
+  "description": "Zephyr module for an abstraction layer across user-space Linux, baremetal, and RTOS environments",
+  "keywords": [
+    "zephyr",
+    "library"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/libmetal"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "framework-zephyr-fatfs",
+  "version": "0.0.0-alpha+sha.94fcd6bfb3",
+  "description": "Zephyr module for FatFS filesystem",
+  "keywords": [
+    "zephyr",
+    "library",
+    "filesystem"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/fatfs"
+  }
+}

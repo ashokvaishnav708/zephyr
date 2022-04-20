@@ -1,0 +1,13 @@
+{
+  "name": "framework-zephyr-cmsis",
+  "version": "0.0.0-alpha+sha.b0612c97c1",
+  "description": "Zephyr module for Software Interface Standard for Arm Cortex-based Microcontrollers",
+  "keywords": [
+    "zephyr",
+    "library"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/cmsis"
+  }
+}

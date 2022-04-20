@@ -1,0 +1,15 @@
+{
+  "name": "framework-zephyr-hal-nordic",
+  "version": "0.0.0-alpha+sha.a6e5299041",
+  "description": "Zephyr module for the Nordic nRF5x HAL",
+  "keywords": [
+    "zephyr",
+    "library",
+    "hal",
+    "nordic semiconductor"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/hal_nordic"
+  }
+}

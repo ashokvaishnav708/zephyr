@@ -1,0 +1,15 @@
+{
+  "name": "framework-zephyr-tflite-micro",
+  "version": "0.0.0-alpha+sha.9156d05092",
+  "description": "Zephyr module for TensorFlow - an end-to-end open source platform for machine learning.",
+  "keywords": [
+    "zephyr",
+    "library",
+    "ML",
+    "machine learning"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/tflite-micro"
+  }
+}

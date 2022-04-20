@@ -1,0 +1,89 @@
+SOF with Zephyr RTOS
+====================
+
+SOF currently uses the Cadence Xtos/HAL and it's own kernel functions as
+its RTOS. SOF is moving to use Zephyr as it's RTOS in parallel to current
+releases using xtos.
+
+The initial "alpha" of SOF on Zephyr will use the Zephyr RTOS for boot, IRQs,
+scheduling and memory allocation. Subsequent release will use more Zephyr
+functionality as code is moved from SOF to Zephyr (i.e. EDF scheduler updates
+copied from SOF to Zephyr).
+
+Building SOF on Zephyr
+======================
+
+Zephyr support is still WiP and moving fast so it's best to use the latest
+code. Some familiarity of SOF and Zephyr is also needed here.
+
+SOF
+---
+
+repo: git@github.com:thesofproject/sof.git
+
+branch: lrg/topic/zephyr-app on the SOF repo
+
+
+Zephyr
+------
+
+repo: git@github.com:thesofproject/zephyr.git
+
+branch: intel_adsp_soc_family
+
+Building
+========
+
+SOF on Zephyr only using the UP^2 platform atm, but it should be possible to
+add others platforms as the features are validated on UP^2.
+
+Please checkout the SOF repo to zephyrproject/modules/audio/sof
+
+Then from zephyr directory.
+
+% source zephyr.sh
+
+This will setup the Zephyr environment, code can then be built
+
+% west build -p always  -b up_squared_adsp samples/basic/minimal
+% west sign -t rimage -- -k ../../sof/sof/rimage/keys/otc_private_key.pem
+
+
+Testing on Qemu
+===============
+
+Get the SOF qemu sof-v4.2 branch here.
+
+git@github.com:thesofproject/qemu.git
+
+Configure as
+
+./configure' '--prefix=.' '--target-list=xtensa-softmmu,x86_64-softmmu' \
+             '--enable-gtk' '--enable-sdl' '--enable-spice' \
+             '--audio-drv-list=alsa' '--enable-libusb' \
+             '--enable-usb-redir' '--enable-coroutine-pool' \
+             '--disable-opengl' '--enable-fdt'
+
+ Then run make.
+
+FW can be tested as follows using the qemu helper script.
+
+ ./xtensa-host.sh apl \
+     -r ../../sof/sof/build_apl_gcc/src/arch/xtensa/rom-apl.bin \
+     -k ../../zephyrproject/zephyr/build/zephyr/zephyr.ri
+
+Where -r and -k are used to specify the ROM and kernel files.
+
+The ROMS can be built from the SOF repo by running
+
+./scripts/xtensa-build-all.sh  -r -a
+
+Using console
+-------------
+
+Using logging and simulator backend with processing printk (LOG_PRINTK)
+can bring console in qemu.
+
+ - Enable xtensa simulator logging backend (LOG_BACKEND_XTENSA_SIM).
+ - Enable printk processing(LOG_PRINTK)
+ - Add "-semihosting" to qemu command line. Make sure it goes through scripts to real qemu.

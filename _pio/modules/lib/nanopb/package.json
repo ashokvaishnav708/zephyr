@@ -1,0 +1,14 @@
+{
+  "name": "framework-zephyr-nanopb",
+  "version": "0.0.0-alpha+sha.d148bd2671",
+  "description": "Zephyr module for Nanopb - Protocol Buffers for Embedded Systems",
+  "keywords": [
+    "zephyr",
+    "library",
+    "serialization"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/nanopb"
+  }
+}

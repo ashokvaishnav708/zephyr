@@ -1,0 +1,1 @@
+{"type": "tool", "name": "framework-zephyr-littlefs", "version": "0.0.0-alpha+sha.9e4498d1c7", "spec": {"owner": "platformio", "id": 8130, "name": "framework-zephyr-littlefs", "requirements": null, "url": null}}

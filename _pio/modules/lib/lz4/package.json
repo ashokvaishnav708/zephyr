@@ -1,0 +1,14 @@
+{
+  "name": "framework-zephyr-lz4",
+  "version": "0.0.0-alpha+sha.8e303c264f",
+  "description": "Zephyr module for LZ4 - a lossless compression algorithm.",
+  "keywords": [
+    "zephyr",
+    "library",
+    "compression"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/lz4"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "framework-zephyr-mcuboot",
+  "version": "0.0.0-alpha+sha.70bfbd21cd",
+  "description": "Zephyr module for MCUboot - a secure bootloader for 32-bit MCUs",
+  "keywords": [
+    "zephyr",
+    "library",
+    "bootloader"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/mcuboot"
+  }
+}

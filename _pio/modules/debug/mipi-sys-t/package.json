@@ -1,0 +1,15 @@
+{
+  "name": "framework-zephyr-mipi-sys-t",
+  "version": "0.0.0-alpha+sha.75e671550a",
+  "description": "Zephyr module for MIPI System Software Trace",
+  "keywords": [
+    "zephyr",
+    "library",
+    "debug",
+    "trace"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/mipi-sys-t"
+  }
+}

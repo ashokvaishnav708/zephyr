@@ -1,0 +1,14 @@
+{
+  "name": "framework-zephyr-lvgl",
+  "version": "0.0.0-alpha+sha.783c1f78c8",
+  "description": "Zephyr module for LittlevGL - an Open-source Embedded GUI Library",
+  "keywords": [
+    "zephyr",
+    "library",
+    "gui"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/lvgl"
+  }
+}

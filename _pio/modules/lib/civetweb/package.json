@@ -1,0 +1,14 @@
+{
+  "name": "framework-zephyr-civetweb",
+  "version": "0.0.0-alpha+sha.094aeb41bb",
+  "description": "Zephyr module for CivetWeb Embedded C/C++ web server",
+  "keywords": [
+    "zephyr",
+    "library",
+    "web server"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zephyrproject-rtos/civetweb"
+  }
+}
