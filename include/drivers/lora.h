@@ -84,6 +84,13 @@ struct lora_modem_config {
 	bool tx;
 };
 
+struct lora_ranging_params {
+	bool status;
+	uint8_t RSSIReg;
+	int16_t RSSIVal;
+	float distance;
+};
+
 /**
  * @typedef lora_api_config()
  * @brief Callback API for configuring the LoRa module
@@ -134,11 +141,14 @@ typedef int (*lora_api_test_cw)(const struct device *dev, uint32_t frequency,
 //
 //
 //
-typedef bool (*lora_api_setup_ranging)(struct lora_modem_config *config,
+typedef bool (*lora_api_setup_ranging)(const struct device *dev, struct lora_modem_config *config,
 				uint32_t address, uint8_t role);
 
-typedef bool (*api_transmit_ranging)(uint32_t address, uint16_t timeout, 
-				int8_t txpower, uint8_t wait);
+typedef struct lora_ranging_params (*lora_api_transmit_ranging)(const struct device *dev, struct lora_modem_config *config, 
+				uint32_t address, uint16_t timeout);
+
+typedef bool (*lora_api_receive_ranging)(const struct device *dev, struct lora_modem_config *config, 
+				uint32_t address, uint16_t timeout);
 //
 //
 //
@@ -152,25 +162,39 @@ struct lora_driver_api {
 	lora_api_test_cw test_cw;
 	//
 	lora_api_setup_ranging setup_ranging;
-	api_transmit_ranging transmit_ranging; 
+	lora_api_transmit_ranging transmit_ranging;
+	lora_api_receive_ranging receive_ranging;
+	
 	//
 };
 
 //
 //
-static inline bool lora_setup_ranging(struct lora_modem_config *config,
+static inline bool lora_setup_ranging(const struct device *dev, struct lora_modem_config *config,
 				uint32_t address, uint8_t role)
 {
-	const struct lora_driver_api *api;
-	return api->setup_ranging(config, address, role);
+	const struct lora_driver_api *api =
+		(const struct lora_driver_api *)dev->api; 
+	return api->setup_ranging(dev, config, address, role);
 }
 
-static inline bool lora_transmit_ranging(uint32_t address, uint16_t timeout, 
-				int8_t txpower, uint8_t wait)
+static inline struct lora_ranging_params lora_transmit_ranging(const struct device *dev, struct lora_modem_config *config, 
+				uint32_t address, uint16_t timeout)
 {
-	const struct lora_driver_api *api;
-	return api->transmit_ranging(address, timeout, txpower, wait);
+	const struct lora_driver_api *api =
+		(const struct lora_driver_api *)dev->api;
+	return api->transmit_ranging(dev, config, address, timeout);
 }
+
+
+static inline bool lora_receive_ranging(const struct device *dev, struct lora_modem_config *config, 
+				uint32_t address, uint16_t timeout)
+{
+	const struct lora_driver_api *api =
+		(const struct lora_driver_api *)dev->api;
+	return api->receive_ranging(dev, config, address, timeout);
+}
+
 //
 //
 

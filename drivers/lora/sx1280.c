@@ -1381,15 +1381,15 @@ int sx1280_lora_recv(const struct device *dev, uint8_t *data, uint8_t size,
 
 uint16_t sx1280_LookupCalibrationValue(ModulationParams_t *modulationParams)
 {
-	RangingCalibValues_t calibValues;
+	//RangingCalibValues_t calibValues;
 	switch(modulationParams->Params.LoRa.Bandwidth)
 	{
 		case LORA_BW_0400:
-			return calibValues.RNG_CALIB_0400[(modulationParams->Params.LoRa.SpreadingFactor >> 4) - 5];
+			return RNG_CALIB_0400[(modulationParams->Params.LoRa.SpreadingFactor >> 4) - 5];
 		case LORA_BW_0800:
-			return calibValues.RNG_CALIB_0800[(modulationParams->Params.LoRa.SpreadingFactor >> 4) - 5];
+			return RNG_CALIB_0800[(modulationParams->Params.LoRa.SpreadingFactor >> 4) - 5];
 		case LORA_BW_1600:
-			return calibValues.RNG_CALIB_1600[(modulationParams->Params.LoRa.SpreadingFactor >> 4) - 5];
+			return RNG_CALIB_1600[(modulationParams->Params.LoRa.SpreadingFactor >> 4) - 5];
 		default:
 			return 0xFFFF;
 	}
@@ -1435,60 +1435,176 @@ void sx1280_SetHighSensitivity()
 	sx1280_WriteRegister(REG_LNA_REGIME, (sx1280_ReadRegister(REG_LNA_REGIME) | 0xC0));
 }
 
-bool sx1280_lora_setup_ranging(struct lora_modem_config *config,
+uint32_t sx1280_GetRangingResultRegValue(uint8_t resultType)
+{
+	uint32_t valLsb = 0;
+
+	sx1280_SetStandby(STDBY_XOSC);
+	sx1280_WriteRegister(0x97F, sx1280_ReadRegister(0x97F) | (1 << 1)); //enable lora modem clock
+	sx1280_WriteRegister(REG_LR_RANGINGRESULTCONFIG, 
+							(sx1280_ReadRegister(REG_LR_RANGINGRESULTCONFIG) & MASK_RANGINGMUXSEL) | 
+							( ( ( ( uint8_t )resultType ) & 0x03 ) << 4 ));
+	valLsb = ( ( (uint32_t) sx1280_ReadRegister(REG_LR_RANGINGRESULTBASEADDR) << 16) | 
+					( (uint32_t) sx1280_ReadRegister(REG_LR_RANGINGRESULTBASEADDR + 1) << 8 ) | 
+					(sx1280_ReadRegister(REG_LR_RANGINGRESULTBASEADDR + 2) ) );
+	sx1280_SetStandby(STDBY_RC);
+	return valLsb;
+}
+
+double sx1280_GetRangingDistance(uint8_t resultType, int32_t regVal, float adjust, uint32_t bandWidth)
+{
+	float val = 0.0;
+
+	if (regVal >= 0x800000)                  //raw reg value at low distance can goto 0x800000 which is negative, set distance to zero if this happens
+	{
+		regVal = 0;
+	}
+
+	// Conversion from LSB to distance. For explanation on the formula, refer to Datasheet of SX1280
+
+	switch (resultType)
+	{
+		case RANGING_RESULT_RAW:
+			// Convert the ranging LSB to distance in meter. The theoretical conversion from register value to distance [m] is given by:
+			// distance [m] = ( complement2( register ) * 150 ) / ( 2^12 * bandwidth[MHz] ) ). The API provide BW in [Hz] so the implemented
+			// formula is complement2( register ) / bandwidth[Hz] * A, where A = 150 / (2^12 / 1e6) = 36621.09
+			val = ( double ) regVal / ( double ) bandWidth * 36621.09375;
+			break;
+
+		case RANGING_RESULT_AVERAGED:
+		case RANGING_RESULT_DEBIASED:
+		case RANGING_RESULT_FILTERED:
+			val = ( double )regVal * 20.0 / 100.0;
+			break;
+		default:
+			val = 0.0;
+			break;
+	}
+
+	val = val * adjust;
+	return val;
+}
+
+int16_t sx1280_GetRangingRSSI()
+{
+	int16_t regData;
+	regData = sx1280_ReadRegister(REG_RANGING_RSSI);
+	regData = regData - 150;
+	return regData;
+}
+
+bool sx1280_lora_setup_ranging(const struct device *dev, struct lora_modem_config *config,
 				uint32_t address, uint8_t role)
 {
+	ModulationParams_t modulationParams;
+	PacketParams_t packetParams;
 
-	ModulationParams_t *modulationParams;
-	PacketParams_t *packetParams;
-
-	modulationParams->PacketType = PACKET_TYPE_RANGING;
-	modulationParams->Params.LoRa.Bandwidth = (RadioLoRaBandwidths_t) config->bandwidth;
-	modulationParams->Params.LoRa.CodingRate = (RadioLoRaCodingRates_t) config->coding_rate;
-	modulationParams->Params.LoRa.SpreadingFactor = (RadioLoRaSpreadingFactors_t) config->datarate;
+	modulationParams.PacketType = PACKET_TYPE_RANGING;
+	modulationParams.Params.LoRa.Bandwidth = (RadioLoRaBandwidths_t) config->bandwidth;
+	modulationParams.Params.LoRa.CodingRate = (RadioLoRaCodingRates_t) config->coding_rate;
+	modulationParams.Params.LoRa.SpreadingFactor = (RadioLoRaSpreadingFactors_t) config->datarate;
 	
-	packetParams->PacketType = PACKET_TYPE_RANGING;
-	packetParams->Params.LoRa.PreambleLength = 12;
-	packetParams->Params.LoRa.PayloadLength = 0;
-	packetParams->Params.LoRa.HeaderType = LORA_PACKET_VARIABLE_LENGTH;
-	packetParams->Params.LoRa.Crc = LORA_CRC_ON;
-	packetParams->Params.LoRa.InvertIQ = LORA_IQ_NORMAL;
+	packetParams.PacketType = PACKET_TYPE_RANGING;
+	packetParams.Params.LoRa.PreambleLength = 12;
+	packetParams.Params.LoRa.PayloadLength = 0;
+	packetParams.Params.LoRa.HeaderType = LORA_PACKET_VARIABLE_LENGTH;
+	packetParams.Params.LoRa.Crc = LORA_CRC_ON;
+	packetParams.Params.LoRa.InvertIQ = LORA_IQ_NORMAL;
 
-	sx1280_SetStandby(STDBY_RC);
-	sx1280_SetPacketType(modulationParams->PacketType);
-	sx1280_SetModulationParams(modulationParams);
-	sx1280_SetPacketParams(packetParams);
+	sx1280_SetStandby(MODE_STDBY_RC);
+	sx1280_SetPacketType(modulationParams.PacketType);
+	sx1280_SetModulationParams(&modulationParams);
+	sx1280_SetPacketParams(&packetParams);
 	sx1280_SetRfFrequency(config->frequency);
+	sx1280_SetTxParams(config->tx_power, RADIO_RAMP_02_US);
 	sx1280_SetRangingSlaveAddress(address);
 	sx1280_SetRangingMasterAddress(address);
-	sx1280_SetRangingCalibration(sx1280_LookupCalibrationValue(modulationParams));
+	sx1280_SetRangingCalibration(sx1280_LookupCalibrationValue(&modulationParams));
 	sx1280_SetRangingRole(role);
+	sx1280_WriteRegister(REG_LR_RANGINGFILTERWINDOWSIZE, 8);
 	sx1280_SetHighSensitivity();
-	
+	LOG_INF("Ranging Setup Done");
 	return true;
 }
 
-bool sx1280_TransmitRanging(uint32_t address, uint16_t timeout, 
-				int8_t txpower, uint8_t wait)
+struct lora_ranging_params sx1280_TransmitRanging(const struct device *dev, 
+					struct lora_modem_config *config, uint32_t address, uint16_t timeout)
 {
+	LOG_INF("Transmit Initiated");
+	struct lora_ranging_params range_params = {
+		.status = false,
+		.RSSIReg = -1,
+		.RSSIVal = -1,
+		.distance = -1,
+	};
+	int ret;
 	uint16_t IrqStatus;
+	int32_t rangingResult;
 	TickTime_t time = {.PeriodBase = RADIO_TICK_SIZE_1000_US, .PeriodBaseCount = timeout};
 
-	sx1280_SetStandby(STDBY_RC);
+	sx1280_SetStandby(MODE_STDBY_RC);
 	sx1280_SetRangingMasterAddress(address);
-	sx1280_SetTxParams(txpower, RADIO_RAMP_02_US);
+	sx1280_SetTxParams(config->tx_power, RADIO_RAMP_02_US);
 	sx1280_SetDioIrqParams(IRQ_RADIO_ALL, 
 		(IRQ_TX_DONE + IRQ_RANGING_MASTER_RESULT_VALID + IRQ_RANGING_MASTER_RESULT_TIMEOUT), 0, 0);
 	sx1280_SetTx(time);
 
-	if(!wait)
+	mode_tx = false;
+	ret = k_sem_take(&recv_sem, K_FOREVER);
+	if (ret < 0) {
+		LOG_ERR("Receive timeout!");
+		return range_params;
+	}
+	
+	IrqStatus = sx1280_readIrqStatus();
+	LOG_INF("IRQ STATUS : %d", IrqStatus);
+	sx1280_SetStandby(MODE_STDBY_RC);
+
+	if (IrqStatus & IRQ_RANGING_MASTER_RESULT_VALID)
+	{
+		rangingResult = sx1280_GetRangingResultRegValue(RANGING_RESULT_RAW);
+		range_params.distance = sx1280_GetRangingDistance(RANGING_RESULT_RAW, rangingResult, 1.0000, config->bandwidth);
+		range_params.RSSIReg = sx1280_ReadRegister(REG_RANGING_RSSI);
+		range_params.RSSIVal = sx1280_GetRangingRSSI();
+		return range_params;
+	}
+	else
+	{
+		LOG_ERR("Ranging Not performed");
+		return range_params;
+	}
+}
+
+
+bool sx1280_ReceiveRanging(const struct device *dev, 
+					struct lora_modem_config *config, uint32_t address, uint16_t timeout)
+{
+	TickTime_t time = {.PeriodBase = RADIO_TICK_SIZE_1000_US, .PeriodBaseCount = timeout};
+	int ret;
+	uint16_t IrqStatus;
+	
+	sx1280_SetTxParams(config->tx_power, RADIO_RAMP_02_US);
+	sx1280_SetRangingSlaveAddress(address);
+	sx1280_SetDioIrqParams(IRQ_RADIO_ALL, (IRQ_RANGING_SLAVE_RESPONSE_DONE + IRQ_RANGING_SLAVE_REQUEST_DISCARDED + IRQ_HEADER_ERROR), 0, 0);
+	sx1280_setRx(time);
+
+	ret = k_sem_take(&recv_sem, K_FOREVER);
+	if (ret < 0) {
+		LOG_ERR("Receive timeout!");
+		return false;
+	}
+
+	sx1280_SetStandby(MODE_STDBY_RC);
+	IrqStatus = sx1280_readIrqStatus();
+
+	if( (IrqStatus & IRQ_RANGING_SLAVE_REQUEST_VALID) | (IrqStatus & IRQ_RANGING_SLAVE_RESPONSE_DONE))
 	{
 		return true;
 	}
-
-	IrqStatus = sx1280_readIrqStatus();
-
-	return true;
+	else
+	{
+		return false;
+	}
 }
 
 
@@ -1500,6 +1616,7 @@ static const struct lora_driver_api sx1280_lora_api = {
 	//
 	.setup_ranging = sx1280_lora_setup_ranging,
 	.transmit_ranging = sx1280_TransmitRanging,
+	.receive_ranging = sx1280_ReceiveRanging,
 	//
 };
 

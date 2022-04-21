@@ -650,6 +650,18 @@ typedef enum
     LNA_HIGH_SENSITIVITY_MODE,
 }RadioLnaSettings_t;
 
+/*! 
+*
+
+typedef struct
+{
+
+}RangingCalibValues_t;
+*/
+uint16_t RNG_CALIB_0400[] = { 10260,  10244,  10228,  10212,  10196,  10180  };   //SF5 to SF10
+uint16_t RNG_CALIB_0800[] = { 11380,  11370,  11360,  11350,  11340,  11330  };
+uint16_t RNG_CALIB_1600[] = { 13100,  13160,  13220,  13280,  13340,  13400  };
+
 /*!
  * \brief Represents an amount of time measurable by the radio clock
  *
@@ -922,15 +934,6 @@ typedef struct
     uint8_t DataRamRetention        : 1;                    //!< Data ram is conserved during sleep
 }SleepParams_t;
 
-/*! 
-*
-*/
-typedef struct
-{
-    uint16_t RNG_CALIB_0400[] = { 10260,  10244,  10228,  10212,  10196,  10180  };   //SF5 to SF10
-    uint16_t RNG_CALIB_0800[] = { 11380,  11370,  11360,  11350,  11340,  11330  };
-    uint16_t RNG_CALIB_1600[] = { 13100,  13160,  13220,  13280,  13340,  13400  };
-}RangingCalibValues_t;
 
 
 #endif // __SX1280_H__
