@@ -384,8 +384,8 @@ void sx1280_SetTx( TickTime_t timeout )
     sx1280_ClearIrqStatus( IRQ_RADIO_ALL );
 
     uint8_t buf[3];
-    //buf[0] = timeout.PeriodBase;
-    buf[0] = 0x02;
+    buf[0] = timeout.PeriodBase;
+    //buf[0] = 0x02;
 	buf[1] = ( uint8_t )( ( timeout.PeriodBaseCount >> 8 ) & 0x00FF );
     buf[2] = ( uint8_t )( timeout.PeriodBaseCount & 0x00FF );
 
@@ -424,7 +424,7 @@ static void sx1280_dio_work_handle(struct k_work *work)
 	if (mode_ranging)
 	{	
 		if(mode_tx) {
-			LOG_INF("%x :",IrqStatus);
+			//LOG_INF("%x :",IrqStatus);
 			if (IrqStatus & IRQ_RANGING_MASTER_RESULT_TIMEOUT) {
 				LOG_ERR("Ranging Timeout.");
 				range_params.status = false;
@@ -1487,6 +1487,11 @@ void sx1280_SetRangingMasterAddress(uint32_t address)
 	sx1280_WriteRegisterSPI(0x912, buffer, 4);
 }
 
+void sx1280_SetRangingAddressLength(RadioRangingIdCheckLengths_t length)
+{
+	sx1280_WriteRegister(REG_LR_RANGINGIDCHECKLENGTH, ( (uint8_t) length) << 6 );
+}
+
 void sx1280_SetRangingRole(uint8_t role)
 {
 	uint8_t buffer[1];
@@ -1513,14 +1518,37 @@ uint32_t sx1280_GetRangingResultRegValue(uint8_t resultType)
 					( (uint32_t) sx1280_ReadRegister(REG_LR_RANGINGRESULTBASEADDR + 1) << 8 ) | 
 					(sx1280_ReadRegister(REG_LR_RANGINGRESULTBASEADDR + 2) ) );
 	sx1280_SetStandby(STDBY_RC);
-	LOG_INF("%x %d", valLsb, valLsb);
+	//LOG_INF("%x %d", valLsb, valLsb);
 	return valLsb;
 }
 
-float sx1280_GetRangingDistance(uint8_t resultType, int32_t regVal, float adjust, uint32_t bandWidth)
+uint32_t sx1280_GetLoRa_Bandwidth(uint8_t bw)
 {
-	float val = 0.0;
+	switch (bw)
+  	{
+		case LORA_BW_0200:
+			return 203125;
 
+		case LORA_BW_0400:
+			return 406250;
+
+		case LORA_BW_0800:
+			return 812500;
+
+		case LORA_BW_1600:
+			return 1625000;
+
+		default:
+			break;
+  	}
+
+  	return 0x0;
+}
+
+double sx1280_GetRangingDistance(uint8_t resultType, int32_t regVal, float adjust, uint8_t bandWidth)
+{
+	double val = 0.0;
+	//LOG_INF("DIST_REGVAL : %x %x %x %x", ((regVal>>24u)&0xFFu), ((regVal>>16u)&0xFFu), ((regVal>>8u)&0xFFu), ((regVal)&0xFFu));
 	if (regVal >= 0x800000)                  //raw reg value at low distance can goto 0x800000 which is negative, set distance to zero if this happens
 	{
 		regVal = 0;
@@ -1534,7 +1562,7 @@ float sx1280_GetRangingDistance(uint8_t resultType, int32_t regVal, float adjust
 			// Convert the ranging LSB to distance in meter. The theoretical conversion from register value to distance [m] is given by:
 			// distance [m] = ( complement2( register ) * 150 ) / ( 2^12 * bandwidth[MHz] ) ). The API provide BW in [Hz] so the implemented
 			// formula is complement2( register ) / bandwidth[Hz] * A, where A = 150 / (2^12 / 1e6) = 36621.09
-			val = ( double ) regVal / ( double ) bandWidth * 36621.09375;
+			val = ( double ) regVal / ( double ) sx1280_GetLoRa_Bandwidth(bandWidth) * 36621.09375;
 			break;
 
 		case RANGING_RESULT_AVERAGED:
@@ -1550,6 +1578,8 @@ float sx1280_GetRangingDistance(uint8_t resultType, int32_t regVal, float adjust
 	val = val * adjust;
 	return val;
 }
+
+
 
 int16_t sx1280_GetRangingRSSI()
 {
@@ -1615,7 +1645,7 @@ struct lora_ranging_params sx1280_TransmitRanging(const struct device *dev,
 
 	//mode_tx = false;
 	ret = k_sem_take(&recv_sem, K_FOREVER);
-	LOG_INF("SEMAPHORE RETURNED.");
+	//LOG_INF("SEMAPHORE RETURNED.");
 	if (ret < 0) {
 		range_params.status = false;
 		return range_params;
@@ -1642,7 +1672,7 @@ bool sx1280_ReceiveRanging(const struct device *dev,
 	TickTime_t time = {.PeriodBase = RADIO_TICK_SIZE_1000_US, .PeriodBaseCount = timeout};
 	int ret;
 	//uint16_t IrqStatus;
-	
+
 	sx1280_SetTxParams(config->tx_power, RADIO_RAMP_02_US);
 	sx1280_SetRangingSlaveAddress(address);
 	sx1280_SetDioIrqParams(IRQ_RADIO_ALL, (IRQ_RANGING_SLAVE_RESPONSE_DONE + IRQ_RANGING_SLAVE_REQUEST_DISCARDED + IRQ_HEADER_ERROR), 0, 0);
