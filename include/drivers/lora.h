@@ -88,7 +88,7 @@ struct lora_ranging_params {
 	bool status;
 	uint8_t RSSIReg;
 	int16_t RSSIVal;
-	double distance;
+	double distance;  // in centimeters
 };
 
 /**

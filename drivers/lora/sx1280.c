@@ -430,7 +430,7 @@ static void sx1280_dio_work_handle(struct k_work *work)
 				range_params.status = false;
 			}
 			else {
-				LOG_INF("Ranging Perforemed.");
+				//LOG_INF("Ranging Perforemed.");
 				range_params.status = true;
 			}
 			k_sem_give(&recv_sem);
@@ -1545,7 +1545,7 @@ uint32_t sx1280_GetLoRa_Bandwidth(uint8_t bw)
   	return 0x0;
 }
 
-double sx1280_GetRangingDistance(uint8_t resultType, int32_t regVal, float adjust, uint8_t bandWidth)
+double sx1280_GetRangingDistance(uint8_t resultType, int32_t regVal, float adjust, uint8_t bandWidth)  // returns distance in meters
 {
 	double val = 0.0;
 	//LOG_INF("DIST_REGVAL : %x %x %x %x", ((regVal>>24u)&0xFFu), ((regVal>>16u)&0xFFu), ((regVal>>8u)&0xFFu), ((regVal)&0xFFu));
@@ -1620,7 +1620,7 @@ bool sx1280_lora_setup_ranging(const struct device *dev, struct lora_modem_confi
 	if ( !(config->tx) ) {
 		sx1280_WriteRegister(REG_LR_RANGINGFILTERWINDOWSIZE, 8);
 	}
-	//sx1280_SetHighSensitivity();
+	sx1280_SetHighSensitivity();
 	sx1280_SetLNAGainSetting(LNA_HIGH_SENSITIVITY_MODE);
 	mode_ranging = true;
 	LOG_INF("Ranging Setup Done");
@@ -1630,7 +1630,7 @@ bool sx1280_lora_setup_ranging(const struct device *dev, struct lora_modem_confi
 struct lora_ranging_params sx1280_TransmitRanging(const struct device *dev, 
 					struct lora_modem_config *config, uint32_t address, uint16_t timeout)
 {
-	LOG_INF("Transmit Initiated");
+	//LOG_INF("Transmit Initiated");
 	int ret;
 	//uint16_t IrqStatus;
 	int32_t rangingResult;
@@ -1656,7 +1656,8 @@ struct lora_ranging_params sx1280_TransmitRanging(const struct device *dev,
 		}
 
 		rangingResult = sx1280_GetRangingResultRegValue(RANGING_RESULT_RAW);
-		range_params.distance = sx1280_GetRangingDistance(RANGING_RESULT_RAW, rangingResult, 1.0000, config->bandwidth);
+		range_params.distance = (sx1280_GetRangingDistance(RANGING_RESULT_RAW, 
+											rangingResult, 1.0000, config->bandwidth)) * 100;  
 		range_params.RSSIReg = sx1280_ReadRegister(REG_RANGING_RSSI);
 		range_params.RSSIVal = sx1280_GetRangingRSSI();
 		return range_params;
@@ -1668,10 +1669,9 @@ struct lora_ranging_params sx1280_TransmitRanging(const struct device *dev,
 bool sx1280_ReceiveRanging(const struct device *dev, 
 					struct lora_modem_config *config, uint32_t address, uint16_t timeout)
 {
-	LOG_INF("RANGING RECEIVER INIT.");
+	//LOG_INF("RANGING RECEIVER INIT.");
 	TickTime_t time = {.PeriodBase = RADIO_TICK_SIZE_1000_US, .PeriodBaseCount = timeout};
 	int ret;
-	//uint16_t IrqStatus;
 
 	sx1280_SetTxParams(config->tx_power, RADIO_RAMP_02_US);
 	sx1280_SetRangingSlaveAddress(address);
@@ -1679,7 +1679,6 @@ bool sx1280_ReceiveRanging(const struct device *dev,
 	sx1280_setRx(time);
 
 	ret = k_sem_take(&recv_sem, K_FOREVER);
-	LOG_INF("SEMAPHORE RETURNED.");
 	if (ret < 0) {
 		LOG_ERR("Receive timeout!");
 		return false;
@@ -1688,19 +1687,6 @@ bool sx1280_ReceiveRanging(const struct device *dev,
 	{
 		return true;
 	}
-	/*
-	sx1280_SetStandby(MODE_STDBY_RC);
-	IrqStatus = sx1280_readIrqStatus();
-
-	if( (IrqStatus & IRQ_RANGING_SLAVE_REQUEST_VALID) || (IrqStatus & IRQ_RANGING_SLAVE_RESPONSE_DONE))
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-	*/
 }
 
 
