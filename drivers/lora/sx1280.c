@@ -1200,6 +1200,7 @@ void sx1280_printRegisters(uint16_t Start, uint16_t End)
 int sx1280_lora_config(const struct device *dev,
 		       struct lora_modem_config *config)
 {
+	mode_ranging = false;
 	// printk("config1\n");
 	sx1280_SetStandby(STDBY_RC);
 	// printk("config2\n");
@@ -1342,7 +1343,7 @@ int sx1280_lora_recv(const struct device *dev, uint8_t *data, uint8_t size,
 	sx1280_SetDioIrqParams(IRQ_RADIO_ALL, (IRQ_RX_DONE + IRQ_RX_TX_TIMEOUT), 0, 0);
 	sx1280_setRx(RX_TX_CONTINUOUS);
 
-	ret = k_sem_take(&recv_sem, K_FOREVER);
+	ret = k_sem_take(&recv_sem, timeout);
 	if (ret < 0) {
 		LOG_ERR("Receive timeout!");
 		return ret;
@@ -1402,7 +1403,7 @@ int sx1280_lora_recv(const struct device *dev, uint8_t *data, uint8_t size,
 //     {
 //         return 1;
 //     }
-	sx1280_ReadBuffer( RXstart, data, size );
+	sx1280_ReadBuffer( RXstart, data, _RXPacketL );
 	return _RXPacketL;
 }
 	// int ret;
@@ -1522,7 +1523,7 @@ uint32_t sx1280_GetRangingResultRegValue(uint8_t resultType)
 	return valLsb;
 }
 
-uint32_t sx1280_GetLoRa_Bandwidth(uint8_t bw)
+uint32_t sx1280GetLoRaBandwidth(uint8_t bw)
 {
 	switch (bw)
   	{
@@ -1562,7 +1563,7 @@ double sx1280_GetRangingDistance(uint8_t resultType, int32_t regVal, float adjus
 			// Convert the ranging LSB to distance in meter. The theoretical conversion from register value to distance [m] is given by:
 			// distance [m] = ( complement2( register ) * 150 ) / ( 2^12 * bandwidth[MHz] ) ). The API provide BW in [Hz] so the implemented
 			// formula is complement2( register ) / bandwidth[Hz] * A, where A = 150 / (2^12 / 1e6) = 36621.09
-			val = ( double ) regVal / ( double ) sx1280_GetLoRa_Bandwidth(bandWidth) * 36621.09375;
+			val = ( double ) regVal / ( double ) sx1280GetLoRaBandwidth(bandWidth) * 36621.09375;
 			break;
 
 		case RANGING_RESULT_AVERAGED:
@@ -1635,7 +1636,6 @@ struct lora_ranging_params sx1280_TransmitRanging(const struct device *dev,
 	//uint16_t IrqStatus;
 	int32_t rangingResult;
 	TickTime_t time = {.PeriodBase = RADIO_TICK_SIZE_1000_US, .PeriodBaseCount = timeout};
-
 	sx1280_SetStandby(MODE_STDBY_RC);
 	sx1280_SetRangingMasterAddress(address);
 	sx1280_SetTxParams(config->tx_power, RADIO_RAMP_02_US);
@@ -1678,9 +1678,9 @@ bool sx1280_ReceiveRanging(const struct device *dev,
 	sx1280_SetDioIrqParams(IRQ_RADIO_ALL, (IRQ_RANGING_SLAVE_RESPONSE_DONE + IRQ_RANGING_SLAVE_REQUEST_DISCARDED + IRQ_HEADER_ERROR), 0, 0);
 	sx1280_setRx(time);
 
-	ret = k_sem_take(&recv_sem, K_FOREVER);
+	ret = k_sem_take(&recv_sem, K_MSEC(timeout));
 	if (ret < 0) {
-		LOG_ERR("Receive timeout!");
+		//LOG_ERR("Receive timeout!");
 		return false;
 	}
 	else
