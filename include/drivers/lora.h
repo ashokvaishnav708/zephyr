@@ -145,10 +145,10 @@ typedef bool (*lora_api_setup_ranging)(const struct device *dev, struct lora_mod
 				uint32_t address, uint8_t role);
 
 typedef struct lora_ranging_params (*lora_api_transmit_ranging)(const struct device *dev, struct lora_modem_config *config, 
-				uint32_t address, uint16_t timeout);
+				uint32_t address);
 
 typedef bool (*lora_api_receive_ranging)(const struct device *dev, struct lora_modem_config *config, 
-				uint32_t address, uint16_t timeout);
+				uint32_t address, k_timeout_t timeout);
 //
 //
 //
@@ -179,16 +179,16 @@ static inline bool lora_setup_ranging(const struct device *dev, struct lora_mode
 }
 
 static inline struct lora_ranging_params lora_transmit_ranging(const struct device *dev, struct lora_modem_config *config, 
-				uint32_t address, uint16_t timeout)
+				uint32_t address)
 {
 	const struct lora_driver_api *api =
 		(const struct lora_driver_api *)dev->api;
-	return api->transmit_ranging(dev, config, address, timeout);
+	return api->transmit_ranging(dev, config, address);
 }
 
 
 static inline bool lora_receive_ranging(const struct device *dev, struct lora_modem_config *config, 
-				uint32_t address, uint16_t timeout)
+				uint32_t address, k_timeout_t timeout)
 {
 	const struct lora_driver_api *api =
 		(const struct lora_driver_api *)dev->api;

@@ -47,6 +47,7 @@ BUILD_ASSERT(DT_NUM_INST_STATUS_OKAY(semtech_sx1280) <= 1,
 bool mode_tx = true;
 struct k_sem recv_sem;
 bool mode_ranging = false;
+bool ranging_valid = false;
 struct lora_ranging_params range_params = {
 		.status = false,
 		.RSSIReg = -1,
@@ -418,8 +419,24 @@ uint16_t sx1280_readIrqStatus()
 	return temp;
 }
 
+
+void sx1280_SetStandby( RadioStandbyModes_t standbyConfig )
+{
+    sx1280_WriteCommand( RADIO_SET_STANDBY, ( uint8_t* )&standbyConfig, 1 );
+// TODO
+//     if( standbyConfig == STDBY_RC )
+//     {
+//         OperatingMode = MODE_STDBY_RC;
+//     }
+//     else
+//     {
+//         OperatingMode = MODE_STDBY_XOSC;
+//     }
+}
+
 static void sx1280_dio_work_handle(struct k_work *work)
 {
+	sx1280_SetStandby(MODE_STDBY_RC);
 	uint16_t IrqStatus = sx1280_readIrqStatus();
 	if (mode_ranging)
 	{	
@@ -435,15 +452,20 @@ static void sx1280_dio_work_handle(struct k_work *work)
 			}
 			k_sem_give(&recv_sem);
 		}
+		
 		else {
+			LOG_INF("IRQ : %x :",IrqStatus);
 			if ( (IrqStatus & IRQ_RANGING_SLAVE_REQUEST_VALID) || 
 							(IrqStatus & IRQ_RANGING_SLAVE_RESPONSE_DONE) ) {
 				LOG_INF("Ranging Request Received.");
+				ranging_valid = true;
 			}
-			else {
-				LOG_INF("%x :",IrqStatus);
-				LOG_ERR("Slave Error.");
+			else if(IrqStatus == ((uint16_t)0x8100)) {	// Filter for DISCARDED SLAVE REQUEST
+				LOG_INF("Slave Error");
+				//sx1280_ClearIrqStatus( IRQ_RADIO_ALL );
+				ranging_valid = false;
 			}
+			else ranging_valid = true;
 			k_sem_give(&recv_sem);
 		}
 	}
@@ -762,20 +784,6 @@ int sx1280_lora_test_cw(const struct device *dev, uint32_t frequency,
 	return 0;
 }
 
-
-void sx1280_SetStandby( RadioStandbyModes_t standbyConfig )
-{
-    sx1280_WriteCommand( RADIO_SET_STANDBY, ( uint8_t* )&standbyConfig, 1 );
-// TODO
-//     if( standbyConfig == STDBY_RC )
-//     {
-//         OperatingMode = MODE_STDBY_RC;
-//     }
-//     else
-//     {
-//         OperatingMode = MODE_STDBY_XOSC;
-//     }
-}
 
 void sx1280_SetRegulatorMode( RadioRegulatorModes_t mode )
 {
@@ -1358,7 +1366,7 @@ int sx1280_lora_recv(const struct device *dev, uint8_t *data, uint8_t size,
 		LOG_ERR("rx error");
 		return -1;
 	}
-
+	
 	sx1280_ReadCommand(RADIO_GET_RXBUFFERSTATUS, buffer, 2);
 	_RXPacketL = buffer[0];
 
@@ -1490,7 +1498,7 @@ void sx1280_SetRangingMasterAddress(uint32_t address)
 
 void sx1280_SetRangingAddressLength(RadioRangingIdCheckLengths_t length)
 {
-	sx1280_WriteRegister(REG_LR_RANGINGIDCHECKLENGTH, ( (uint8_t) length) << 6 );
+	sx1280_WriteRegister(REG_LR_RANGINGIDCHECKLENGTH,   (uint8_t) (length << 6) );
 }
 
 void sx1280_SetRangingRole(uint8_t role)
@@ -1614,8 +1622,13 @@ bool sx1280_lora_setup_ranging(const struct device *dev, struct lora_modem_confi
 	sx1280_SetPacketParams(&packetParams);
 	sx1280_SetRfFrequency(config->frequency);
 	sx1280_SetTxParams(config->tx_power, RADIO_RAMP_02_US);
-	sx1280_SetRangingSlaveAddress(address);
-	sx1280_SetRangingMasterAddress(address);
+
+	if(!(config->tx)) {
+		sx1280_SetRangingSlaveAddress(address);
+		sx1280_SetRangingAddressLength(RANGING_IDCHECK_LENGTH_32_BITS);
+	} 
+	else sx1280_SetRangingMasterAddress(address);
+	
 	sx1280_SetRangingCalibration(sx1280_LookupCalibrationValue(&modulationParams));
 	sx1280_SetRangingRole(role);
 	if ( !(config->tx) ) {
@@ -1629,13 +1642,14 @@ bool sx1280_lora_setup_ranging(const struct device *dev, struct lora_modem_confi
 }
 
 struct lora_ranging_params sx1280_TransmitRanging(const struct device *dev, 
-					struct lora_modem_config *config, uint32_t address, uint16_t timeout)
+					struct lora_modem_config *config, uint32_t address)
 {
 	//LOG_INF("Transmit Initiated");
 	int ret;
 	//uint16_t IrqStatus;
 	int32_t rangingResult;
-	TickTime_t time = {.PeriodBase = RADIO_TICK_SIZE_1000_US, .PeriodBaseCount = timeout};
+	
+	TickTime_t time = {.PeriodBase = RADIO_TICK_SIZE_1000_US, .PeriodBaseCount = 10000};
 	sx1280_SetStandby(MODE_STDBY_RC);
 	sx1280_SetRangingMasterAddress(address);
 	sx1280_SetTxParams(config->tx_power, RADIO_RAMP_02_US);
@@ -1667,26 +1681,28 @@ struct lora_ranging_params sx1280_TransmitRanging(const struct device *dev,
 
 
 bool sx1280_ReceiveRanging(const struct device *dev, 
-					struct lora_modem_config *config, uint32_t address, uint16_t timeout)
+					struct lora_modem_config *config, uint32_t address, k_timeout_t timeout)
 {
 	//LOG_INF("RANGING RECEIVER INIT.");
-	TickTime_t time = {.PeriodBase = RADIO_TICK_SIZE_1000_US, .PeriodBaseCount = timeout};
+	TickTime_t time = {.PeriodBase = RADIO_TICK_SIZE_1000_US, .PeriodBaseCount = 0xFFFF};
 	int ret;
 
 	sx1280_SetTxParams(config->tx_power, RADIO_RAMP_02_US);
 	sx1280_SetRangingSlaveAddress(address);
 	sx1280_SetDioIrqParams(IRQ_RADIO_ALL, (IRQ_RANGING_SLAVE_RESPONSE_DONE + IRQ_RANGING_SLAVE_REQUEST_DISCARDED + IRQ_HEADER_ERROR), 0, 0);
-	sx1280_setRx(time);
-
-	ret = k_sem_take(&recv_sem, K_MSEC(timeout));
-	if (ret < 0) {
-		//LOG_ERR("Receive timeout!");
-		return false;
-	}
-	else
-	{
-		return true;
-	}
+	
+	//sx1280_setRx(time);
+	//ret = k_sem_take(&recv_sem, timeout);
+	//LOG_INF("RET : %d", ret);
+	ranging_valid = false;
+	do {
+		sx1280_setRx(time);
+		ret = k_sem_take(&recv_sem, timeout);
+		//LOG_INF("RET : %d", ret);
+	}while(!(ranging_valid));   // To respond ranging to respective address
+	ranging_valid = false;
+	
+	return ret;
 }
 
 
