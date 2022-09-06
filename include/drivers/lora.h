@@ -25,12 +25,11 @@ extern "C" {
 /*!
  * \brief Represents the bandwidth values for LORA packet type
  */
-enum lora_signal_bandwidth
-{
-    BW_0200                            = 0x34,
-    BW_0400                            = 0x26,
-    BW_0800                            = 0x18,
-    BW_1600                            = 0x0A,
+enum lora_signal_bandwidth {
+	BW_0200 = 0x34,
+	BW_0400 = 0x26,
+	BW_0800 = 0x18,
+	BW_1600 = 0x0A,
 };
 #else
 enum lora_signal_bandwidth {
@@ -44,20 +43,20 @@ enum lora_signal_bandwidth {
 /*!
  * \brief Represents the possible spreading factor values in LORA packet types
  */
-enum lora_datarate
-{
-    SF_5                                = 0x50,
-    SF_6                                = 0x60,
-    SF_7                                = 0x70,
-    SF_8                                = 0x80,
-    SF_9                                = 0x90,
-    SF_10                               = 0xA0,
-    SF_11                               = 0xB0,
-    SF_12                               = 0xC0,
+enum lora_datarate {
+	SF_5 = 0x50,
+	SF_6 = 0x60,
+	SF_7 = 0x70,
+	SF_8 = 0x80,
+	SF_9 = 0x90,
+	SF_10 = 0xA0,
+	SF_11 = 0xB0,
+	SF_12 = 0xC0,
 };
 #else
 enum lora_datarate {
-	SF_6 = 6,
+	SF_5 = 5,
+	SF_6,
 	SF_7,
 	SF_8,
 	SF_9,
@@ -88,7 +87,7 @@ struct lora_ranging_params {
 	bool status;
 	uint8_t RSSIReg;
 	int16_t RSSIVal;
-	double distance;  // in centimeters
+	double distance; // in centimeters
 };
 
 /**
@@ -97,8 +96,7 @@ struct lora_ranging_params {
  *
  * @see lora_config() for argument descriptions.
  */
-typedef int (*lora_api_config)(const struct device *dev,
-			       struct lora_modem_config *config);
+typedef int (*lora_api_config)(const struct device *dev, struct lora_modem_config *config);
 
 /**
  * @typedef lora_api_send()
@@ -106,8 +104,7 @@ typedef int (*lora_api_config)(const struct device *dev,
  *
  * @see lora_send() for argument descriptions.
  */
-typedef int (*lora_api_send)(const struct device *dev,
-			     uint8_t *data, uint32_t data_len);
+typedef int (*lora_api_send)(const struct device *dev, uint8_t *data, uint32_t data_len);
 
 /**
  * @typedef lora_api_send_async()
@@ -115,8 +112,7 @@ typedef int (*lora_api_send)(const struct device *dev,
  *
  * @see lora_send_async() for argument descriptions.
  */
-typedef int (*lora_api_send_async)(const struct device *dev,
-				   uint8_t *data, uint32_t data_len,
+typedef int (*lora_api_send_async)(const struct device *dev, uint8_t *data, uint32_t data_len,
 				   struct k_poll_signal *async);
 
 /**
@@ -125,8 +121,7 @@ typedef int (*lora_api_send_async)(const struct device *dev,
  *
  * @see lora_recv() for argument descriptions.
  */
-typedef int (*lora_api_recv)(const struct device *dev, uint8_t *data,
-			     uint8_t size,
+typedef int (*lora_api_recv)(const struct device *dev, uint8_t *data, uint8_t size,
 			     k_timeout_t timeout, int16_t *rssi, int8_t *snr);
 
 /**
@@ -135,24 +130,25 @@ typedef int (*lora_api_recv)(const struct device *dev, uint8_t *data,
  *
  * @see lora_test_cw() for argument descriptions.
  */
-typedef int (*lora_api_test_cw)(const struct device *dev, uint32_t frequency,
-				int8_t tx_power, uint16_t duration);
+typedef int (*lora_api_test_cw)(const struct device *dev, uint32_t frequency, int8_t tx_power,
+				uint16_t duration);
 
 //
 //
 //
 typedef bool (*lora_api_setup_ranging)(const struct device *dev, struct lora_modem_config *config,
-				uint32_t address, uint8_t role);
+				       uint32_t address, uint8_t role);
 
-typedef struct lora_ranging_params (*lora_api_transmit_ranging)(const struct device *dev, struct lora_modem_config *config, 
-				uint32_t address);
+typedef struct lora_ranging_params (*lora_api_transmit_ranging)(const struct device *dev,
+								struct lora_modem_config *config,
+								uint32_t address);
 
-typedef bool (*lora_api_receive_ranging)(const struct device *dev, struct lora_modem_config *config, 
-				uint32_t address, k_timeout_t timeout);
+typedef bool (*lora_api_receive_ranging)(const struct device *dev, struct lora_modem_config *config,
+					 uint32_t address, k_timeout_t timeout);
+
 //
 //
 //
-
 
 struct lora_driver_api {
 	lora_api_config config;
@@ -164,40 +160,35 @@ struct lora_driver_api {
 	lora_api_setup_ranging setup_ranging;
 	lora_api_transmit_ranging transmit_ranging;
 	lora_api_receive_ranging receive_ranging;
-	
 	//
 };
 
 //
 //
+
 static inline bool lora_setup_ranging(const struct device *dev, struct lora_modem_config *config,
-				uint32_t address, uint8_t role)
+				      uint32_t address, uint8_t role)
 {
-	const struct lora_driver_api *api =
-		(const struct lora_driver_api *)dev->api; 
+	const struct lora_driver_api *api = (const struct lora_driver_api *)dev->api;
 	return api->setup_ranging(dev, config, address, role);
 }
 
-static inline struct lora_ranging_params lora_transmit_ranging(const struct device *dev, struct lora_modem_config *config, 
-				uint32_t address)
+static inline struct lora_ranging_params
+lora_transmit_ranging(const struct device *dev, struct lora_modem_config *config, uint32_t address)
 {
-	const struct lora_driver_api *api =
-		(const struct lora_driver_api *)dev->api;
+	const struct lora_driver_api *api = (const struct lora_driver_api *)dev->api;
 	return api->transmit_ranging(dev, config, address);
 }
 
-
-static inline bool lora_receive_ranging(const struct device *dev, struct lora_modem_config *config, 
-				uint32_t address, k_timeout_t timeout)
+static inline bool lora_receive_ranging(const struct device *dev, struct lora_modem_config *config,
+					uint32_t address, k_timeout_t timeout)
 {
-	const struct lora_driver_api *api =
-		(const struct lora_driver_api *)dev->api;
+	const struct lora_driver_api *api = (const struct lora_driver_api *)dev->api;
 	return api->receive_ranging(dev, config, address, timeout);
 }
 
 //
 //
-
 
 /**
  * @brief Configure the LoRa modem
@@ -207,11 +198,9 @@ static inline bool lora_receive_ranging(const struct device *dev, struct lora_mo
 		  modem
  * @return 0 on success, negative on error
  */
-static inline int lora_config(const struct device *dev,
-			      struct lora_modem_config *config)
+static inline int lora_config(const struct device *dev, struct lora_modem_config *config)
 {
-	const struct lora_driver_api *api =
-		(const struct lora_driver_api *)dev->api;
+	const struct lora_driver_api *api = (const struct lora_driver_api *)dev->api;
 
 	return api->config(dev, config);
 }
@@ -226,11 +215,9 @@ static inline int lora_config(const struct device *dev,
  * @param data_len  Length of the data to be sent
  * @return 0 on success, negative on error
  */
-static inline int lora_send(const struct device *dev,
-			    uint8_t *data, uint32_t data_len)
+static inline int lora_send(const struct device *dev, uint8_t *data, uint32_t data_len)
 {
-	const struct lora_driver_api *api =
-		(const struct lora_driver_api *)dev->api;
+	const struct lora_driver_api *api = (const struct lora_driver_api *)dev->api;
 
 	return api->send(dev, data, data_len);
 }
@@ -249,12 +236,10 @@ static inline int lora_send(const struct device *dev,
  *        notify the end of the transmission).
  * @return 0 on success, negative on error
  */
-static inline int lora_send_async(const struct device *dev,
-				  uint8_t *data, uint32_t data_len,
+static inline int lora_send_async(const struct device *dev, uint8_t *data, uint32_t data_len,
 				  struct k_poll_signal *async)
 {
-	const struct lora_driver_api *api =
-		(const struct lora_driver_api *)dev->api;
+	const struct lora_driver_api *api = (const struct lora_driver_api *)dev->api;
 
 	return api->send_async(dev, data, data_len, async);
 }
@@ -273,12 +258,10 @@ static inline int lora_send_async(const struct device *dev,
  * @param snr       SNR of received data
  * @return Length of the data received on success, negative on error
  */
-static inline int lora_recv(const struct device *dev, uint8_t *data,
-			    uint8_t size,
+static inline int lora_recv(const struct device *dev, uint8_t *data, uint8_t size,
 			    k_timeout_t timeout, int16_t *rssi, int8_t *snr)
 {
-	const struct lora_driver_api *api =
-		(const struct lora_driver_api *)dev->api;
+	const struct lora_driver_api *api = (const struct lora_driver_api *)dev->api;
 
 	return api->recv(dev, data, size, timeout, rssi, snr);
 }
@@ -295,11 +278,10 @@ static inline int lora_recv(const struct device *dev, uint8_t *data,
  * @param duration  Transmission duration in seconds.
  * @return 0 on success, negative on error
  */
-static inline int lora_test_cw(const struct device *dev, uint32_t frequency,
-			       int8_t tx_power, uint16_t duration)
+static inline int lora_test_cw(const struct device *dev, uint32_t frequency, int8_t tx_power,
+			       uint16_t duration)
 {
-	const struct lora_driver_api *api =
-		(const struct lora_driver_api *)dev->api;
+	const struct lora_driver_api *api = (const struct lora_driver_api *)dev->api;
 
 	if (api->test_cw == NULL) {
 		return -ENOSYS;
@@ -312,4 +294,4 @@ static inline int lora_test_cw(const struct device *dev, uint32_t frequency,
 }
 #endif
 
-#endif	/* ZEPHYR_INCLUDE_DRIVERS_LORA_H_ */
+#endif /* ZEPHYR_INCLUDE_DRIVERS_LORA_H_ */
